@@ -665,7 +665,7 @@
 
         <div class="info-banner" id="offline-banner" style="display:none;">
           <span class="ib-icon">🔌</span>
-          <div><b>Transcription engine offline.</b> The backend isn't reachable right now. If you're running locally, start the server (<b>Start Server.bat</b>) and refresh.</div>
+          <div><b>Transcription engine offline.</b> If this page is on Vercel/Netlify, set your <b>Railway backend URL</b> in Settings. If running locally, start the server (<b>Start Server.bat</b>) and refresh.</div>
         </div>
 
         <div class="platform-tabs">
@@ -776,6 +776,16 @@
           <div class="setting-group-title">Engine</div>
           <div class="setting-row">
             <div class="setting-info">
+              <div class="setting-name">Backend server URL</div>
+              <div class="setting-desc">Leave blank if the server hosts this page. On Vercel/Netlify, paste your Railway URL (e.g. https://your-app.up.railway.app).</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="text" id="api-base-input" placeholder="https://...up.railway.app" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;width:230px;" />
+              <button class="btn-secondary" onclick="saveApiBase()">Save</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
               <div class="setting-name">Transcription model</div>
               <div class="setting-desc">Speech-to-text powered by Groq's free Whisper API</div>
             </div>
@@ -857,6 +867,10 @@
 /* ═══════════ STATE ═══════════ */
 let history_data = JSON.parse(localStorage.getItem('rs_history') || '[]');
 let options = { timestamps: true, clean: false };
+// Backend (engine) URL. Empty = same origin (when Flask serves this page).
+// When this page is hosted on Vercel/Netlify, set it to your Railway URL in Settings.
+let API_BASE = (localStorage.getItem('rs_api_base') || '').replace(/\/+$/, '');
+function api(path) { return API_BASE + path; }
 let currentTranscript = '';
 let currentUrl = '';
 let currentTitle = '';
@@ -867,14 +881,25 @@ let serverOnline = false;
 function init() {
   updateSidebarStats();
   renderHistory();
+  const inp = document.getElementById('api-base-input');
+  if (inp) inp.value = API_BASE;
   checkServerStatus();
   setInterval(checkServerStatus, 20000);
+}
+
+function saveApiBase() {
+  const v = document.getElementById('api-base-input').value.trim().replace(/\/+$/, '');
+  if (v && !/^https?:\/\//.test(v)) { showNotif('error', '✕', 'URL must start with http:// or https://'); return; }
+  localStorage.setItem('rs_api_base', v);
+  API_BASE = v;
+  showNotif('success', '✓', v ? 'Backend URL saved' : 'Using same-origin backend');
+  checkServerStatus();
 }
 
 /* ═══════════ SERVER STATUS ═══════════ */
 async function checkServerStatus() {
   try {
-    const r = await fetch('/health', { signal: AbortSignal.timeout(6000) });
+    const r = await fetch(api('/health'), { signal: AbortSignal.timeout(6000) });
     serverOnline = r.ok;
   } catch (e) { serverOnline = false; }
 
@@ -1022,14 +1047,16 @@ async function startTranscription() {
 async function callRealBackend(url) {
   // 1. confirm the engine is reachable
   try {
-    const health = await fetch('/health', { signal: AbortSignal.timeout(8000) });
+    const health = await fetch(api('/health'), { signal: AbortSignal.timeout(8000) });
     if (!health.ok) throw new Error('offline');
   } catch (e) {
-    throw new Error('Transcription engine is offline. Start the server and try again.');
+    throw new Error(API_BASE
+      ? 'Backend not reachable. Check the server URL in Settings.'
+      : 'Transcription engine is offline. Start the server (or set the backend URL in Settings).');
   }
 
   // 2. transcribe (no client timeout — can take a while)
-  const res = await fetch('/transcribe', {
+  const res = await fetch(api('/transcribe'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url })
