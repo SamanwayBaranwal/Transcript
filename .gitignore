@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+scratch/
+*.mp3
+*.m4a
+*.webm
