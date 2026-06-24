@@ -103,7 +103,7 @@ def transcribe():
                 "no_warnings": True,
                 "noplaylist": True,
                 # YouTube now needs a JS runtime; allow deno or node
-                "js_runtimes": ["deno", "node"],
+                "js_runtimes": {"deno": None, "node": None},
             }
             if FFMPEG_DIR:
                 ydl_opts["ffmpeg_location"] = FFMPEG_DIR
