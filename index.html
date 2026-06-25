@@ -692,7 +692,6 @@
           </div>
 
           <div class="options-row">
-            <button class="option-chip on" id="opt-timestamps" onclick="toggleOption(this)">🕐 Timestamps</button>
             <button class="option-chip" id="opt-clean" onclick="toggleOption(this)">✨ Clean filler words</button>
           </div>
         </div>
@@ -866,7 +865,7 @@
 <script>
 /* ═══════════ STATE ═══════════ */
 let history_data = JSON.parse(localStorage.getItem('rs_history') || '[]');
-let options = { timestamps: true, clean: false };
+let options = { clean: false };
 // Backend (engine) URL. Empty = same origin (when Flask serves this page).
 // When this page is hosted on Vercel/Netlify, set it to your Railway URL in Settings.
 let API_BASE = (localStorage.getItem('rs_api_base') || '').replace(/\/+$/, '');
@@ -1014,8 +1013,6 @@ async function startTranscription() {
     await sleep(250);
 
     let transcript = data.transcript;
-    if (!options.timestamps) transcript = transcript.replace(/\[\d+:\d{2}\]\s*/g, '');
-
     currentTranscript = transcript;
     currentTitle = data.title || 'Transcript';
     document.getElementById('transcript-output').value = transcript;

@@ -165,18 +165,8 @@ def transcribe():
                     timestamp_granularities=["segment"],
                 )
 
-            # ── STEP 3: Format transcript ──
-            lines = []
-            segments = getattr(result, "segments", None)
-            if segments:
-                for seg in segments:
-                    s = seg["start"] if isinstance(seg, dict) else seg.start
-                    txt = seg["text"] if isinstance(seg, dict) else seg.text
-                    s = int(s)
-                    lines.append(f"[{s // 60}:{s % 60:02d}] {txt.strip()}")
-                transcript = "\n\n".join(lines)
-            else:
-                transcript = result.text
+            # ── STEP 3: Plain transcript (no timestamps) ──
+            transcript = (result.text or "").strip()
 
             return jsonify({
                 "success": True,
