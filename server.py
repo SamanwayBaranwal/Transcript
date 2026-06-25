@@ -22,6 +22,27 @@ import traceback
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
+def load_dotenv():
+    """Minimal .env loader (no dependency). Lets `GROQ_API_KEY=...` persist across restarts."""
+    path = os.path.join(BASE_DIR, ".env")
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                os.environ.setdefault(k, v)
+    except OSError:
+        pass
+
+
+load_dotenv()
+
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 CORS(app)
 
@@ -44,6 +65,9 @@ def find_ffmpeg():
 
 
 FFMPEG_DIR = find_ffmpeg()
+if FFMPEG_DIR:
+    # Ensure ffmpeg/ffprobe are discoverable by yt-dlp's postprocessor
+    os.environ["PATH"] = FFMPEG_DIR + os.pathsep + os.environ.get("PATH", "")
 
 
 # ─────────────────────────────────────────
